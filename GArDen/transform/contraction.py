@@ -76,7 +76,7 @@ label_modifier = contraction_modifier(attribute_in='type',
 weight_modifier = contraction_modifier(attribute_in='weight',
                                        attribute_out='weight',
                                        reduction='sum')
-modifiers = [label_modifier, weight_modifier]
+# modifiers = [label_modifier, weight_modifier]
 
 # ------------------------------------------------------------------------------
 
@@ -87,11 +87,13 @@ class Contract(BaseEstimator, TransformerMixin):
     def __init__(self,
                  contraction_attribute='label',
                  nesting=False,
+                 original_edges_to_nesting=False,
                  weight_scaling_factor=1,
-                 modifiers=modifiers):
+                 modifiers=None):
         """Constructor."""
         self.contraction_attribute = contraction_attribute
         self.nesting = nesting
+        self.original_edges_to_nesting = original_edges_to_nesting
         self.weight_scaling_factor = weight_scaling_factor
         self.modifiers = modifiers
 
@@ -114,7 +116,7 @@ class Contract(BaseEstimator, TransformerMixin):
         g_contracted = self._edge_contraction(graph=g)
         info = g_contracted.graph.get('info', '')
         g_contracted.graph['info'] = info + '\n' + \
-            serialize_modifiers(modifiers)
+            serialize_modifiers(self.modifiers)
         for n, d in g_contracted.nodes_iter(data=True):
             # get list of contracted node ids
             contracted = d.get('contracted', None)
@@ -122,7 +124,7 @@ class Contract(BaseEstimator, TransformerMixin):
                 raise Exception(
                     'Empty contraction list for: id %d data: %s' %
                     (n, d))
-            for modifier in modifiers:
+            for modifier in self.modifiers:
                 modifier_func = contraction_modifer_map[modifier.reduction]
                 g_contracted.node[n][modifier.attribute_out] = modifier_func(
                     input_attribute=modifier.attribute_in,
@@ -135,6 +137,9 @@ class Contract(BaseEstimator, TransformerMixin):
                 g_contracted.node[n]['weight'] = w
         # add nesting edges between the contraction graph and original graph
         if self.nesting:
+            if self.original_edges_to_nesting:
+                for u, v in g.edges():
+                    g.edge[u][v]['nesting'] = True
             g_nested = nx.disjoint_union(g, g_contracted)
             # rewire contracted graph to the original graph
             for n, d in g_nested.nodes_iter(data=True):
@@ -275,11 +280,12 @@ class Minor(BaseEstimator, TransformerMixin):
         part_name_dict = dict()
         part_id_dict = defaultdict(list)
         for u in graph.nodes_iter():
-            part_ids = graph.node[u][self.part_id]
-            part_names = graph.node[u][self.part_name]
-            for part_id, part_name in zip(part_ids, part_names):
-                part_id_dict[part_id].append(u)
-                part_name_dict[part_id] = part_name
+            if self.part_id in graph.node[u]:
+                part_ids = graph.node[u][self.part_id]
+                part_names = graph.node[u][self.part_name]
+                for part_id, part_name in zip(part_ids, part_names):
+                    part_id_dict[part_id].append(u)
+                    part_name_dict[part_id] = part_name
         m_graph = nx.Graph()
         # copy attributes
         m_graph.graph = graph.graph
@@ -294,12 +300,13 @@ class Minor(BaseEstimator, TransformerMixin):
         # create an edge between two part_id nodes if there existed such an
         # edge between two nodes that had that part_id
         for u, v in graph.edges():
-            p_id_us = graph.node[u][self.part_id]
-            p_id_vs = graph.node[v][self.part_id]
-            for p_id_u in p_id_us:
-                for p_id_v in p_id_vs:
-                    if p_id_u != p_id_v:
-                        if (p_id_u, p_id_v) not in m_graph.edges():
-                            m_graph.add_edge(p_id_u, p_id_v)
-                            m_graph.edge[p_id_u][p_id_v]['label'] = 'part_of'
+            if self.part_id in graph.node[u] and self.part_id in graph.node[v]:
+                p_id_us = graph.node[u][self.part_id]
+                p_id_vs = graph.node[v][self.part_id]
+                for p_id_u in p_id_us:
+                    for p_id_v in p_id_vs:
+                        if p_id_u != p_id_v:
+                            if (p_id_u, p_id_v) not in m_graph.edges():
+                                m_graph.add_edge(p_id_u, p_id_v)
+                                m_graph.edge[p_id_u][p_id_v]['label'] = 'part_of'
         return m_graph

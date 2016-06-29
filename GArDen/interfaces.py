@@ -5,8 +5,6 @@ from eden.util import is_iterable
 import random
 from itertools import tee, izip
 from collections import defaultdict
-from GArDen.partition import ClustererWrapper
-from GArDen.predict import ClassifierWrapper, RegressorWrapper, KNNWrapper
 from GArDen.order import OrdererWrapper
 
 import logging
@@ -124,27 +122,15 @@ def model(iterable, program=None, precondition=precondition,
     Return a biased program that can be used in the other operators.
     """
     try:
-        # the wrapper provides the vectorization support
-        if precond_is_classifier(iterable=iterable, program=program):
-            wprogram = ClassifierWrapper(program=program)
-        elif precond_is_regressor(iterable=iterable, program=program):
-            wprogram = RegressorWrapper(program=program)
-        elif precond_is_knn(iterable=iterable, program=program):
-            wprogram = KNNWrapper(program=program)
-        elif precond_is_wrapped(iterable=iterable, program=program):
-            wprogram = program
-        else:
-            Exception('program type is unknown')
-
         parameters = sample_parameters_uniformly_at_random(parameters_priors)
         if parameters:
-            wprogram.set_params(**parameters)
-        if precondition(iterable=iterable, program=wprogram) is False:
+            program.set_params(**parameters)
+        if precondition(iterable=iterable, program=program) is False:
             raise Exception('precondition failed')
-        wprogram = wprogram.fit(iterable)
-        if postcondition(iterable=None, program=wprogram) is False:
+        program = program.fit(iterable)
+        if postcondition(iterable=None, program=program) is False:
             raise Exception('postcondition failed')
-        return wprogram
+        return program
     except Exception as e:
         logger.debug('Error. Reason: %s' % e)
         logger.debug('Exception', exc_info=True)
@@ -154,25 +140,13 @@ def predict(iterable, program=None, precondition=precondition,
             postcondition=postcondition, parameters_priors=None):
     """Map a graph to an output data type."""
     try:
-        # the wrapper provides the vectorization support
-        if precond_is_classifier(iterable=iterable, program=program):
-            wprogram = ClassifierWrapper(program=program)
-        elif precond_is_regressor(iterable=iterable, program=program):
-            wprogram = RegressorWrapper(program=program)
-        elif precond_is_knn(iterable=iterable, program=program):
-            wprogram = KNNWrapper(program=program)
-        elif precond_is_wrapped(iterable=iterable, program=program):
-            wprogram = program
-        else:
-            Exception('program type is unknown')
-
         parameters = sample_parameters_uniformly_at_random(parameters_priors)
         if parameters:
-            wprogram.set_params(**parameters)
-        if precondition(iterable=iterable, program=wprogram) is False:
+            program.set_params(**parameters)
+        if precondition(iterable=iterable, program=program) is False:
             raise Exception('precondition failed')
-        predictions = wprogram.predict(iterable)
-        if postcondition(iterable=predictions, program=wprogram) is False:
+        predictions = program.predict(iterable)
+        if postcondition(iterable=predictions, program=program) is False:
             raise Exception('postcondition failed')
         return predictions
     except Exception as e:
@@ -190,8 +164,10 @@ def partition(iterable, program=None, precondition=precondition,
     elements that have the same parent or advances to the parent.
     """
     try:
+        # the wrapping has to be done externally so to allow programs
+        # that work on graphs to act directly
         # the wrapper provides the vectorization support
-        program = ClustererWrapper(program=program)
+        # program = ClustererWrapper(program=program)
 
         parameters = sample_parameters_uniformly_at_random(parameters_priors)
         if parameters:
@@ -202,10 +178,10 @@ def partition(iterable, program=None, precondition=precondition,
         predictions = program.fit_predict(iterable_)
         if postcondition(iterable=predictions, program=program) is False:
             raise Exception('postcondition failed')
-        partition_list = defaultdict(list)
+        partition_dict = defaultdict(list)
         for prediction, graph in izip(predictions, iterable):
-            partition_list[prediction].append(graph.copy())
-        return partition_list
+            partition_dict[prediction].append(graph.copy())
+        return partition_dict
     except Exception as e:
         logger.debug('Error. Reason: %s' % e)
         logger.debug('Exception', exc_info=True)
@@ -242,16 +218,42 @@ def compose(iterable, program=None, precondition=precondition,
             postcondition=postcondition, parameters_priors=None):
     """Map iterator over graphs to a graph.
 
-    Example: receive two iterators on corresponding graphs and yield an
+    Example: receive iterator over pairs (or lists) of graphs and yield an
     iterator over a composite graph.
     """
-    pass
+    try:
+        parameters = sample_parameters_uniformly_at_random(parameters_priors)
+        if parameters:
+            program.set_params(**parameters)
+        if precondition(iterable=iterable, program=program) is False:
+            raise Exception('precondition failed')
+        out_iterable = program.transform(iterable)
+        if postcondition(iterable=out_iterable, program=program) is False:
+            raise Exception('postcondition failed')
+        for item in out_iterable:
+            yield item
+    except Exception as e:
+        logger.debug('Error. Reason: %s' % e)
+        logger.debug('Exception', exc_info=True)
 
 
 def decompose(iterable, program=None, precondition=precondition,
               postcondition=postcondition, parameters_priors=None):
     """Map a graph to an iterator over subgraphs of the input graph."""
-    pass
+    try:
+        parameters = sample_parameters_uniformly_at_random(parameters_priors)
+        if parameters:
+            program.set_params(**parameters)
+        if precondition(iterable=iterable, program=program) is False:
+            raise Exception('precondition failed')
+        out_iterable = program.transform(iterable)
+        if postcondition(iterable=out_iterable, program=program) is False:
+            raise Exception('postcondition failed')
+        for item in out_iterable:
+            yield item
+    except Exception as e:
+        logger.debug('Error. Reason: %s' % e)
+        logger.debug('Exception', exc_info=True)
 
 
 def transform(iterable, program=None, precondition=precondition,
@@ -280,11 +282,24 @@ def transform(iterable, program=None, precondition=precondition,
         logger.debug('Exception', exc_info=True)
 
 
-def contruct(iterable, program=None, precondition=precondition,
-             postcondition=postcondition, parameters_priors=None):
+def construct(iterable, program=None, precondition=precondition,
+              postcondition=postcondition, parameters_priors=None):
     """Map a graph to iterator over similar but novel graphs.
 
     Example: learn probability distribution over graphs given a finite example
     set and sample a stream of graphs from the same probability distribution.
     """
-    pass
+    try:
+        parameters = sample_parameters_uniformly_at_random(parameters_priors)
+        if parameters:
+            program.set_params(**parameters)
+        if precondition(iterable=iterable, program=program) is False:
+            raise Exception('precondition failed')
+        out_iterable = program.transform(iterable)
+        if postcondition(iterable=out_iterable, program=program) is False:
+            raise Exception('postcondition failed')
+        for item in out_iterable:
+            yield item
+    except Exception as e:
+        logger.debug('Error. Reason: %s' % e)
+        logger.debug('Exception', exc_info=True)
