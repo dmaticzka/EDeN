@@ -10,6 +10,7 @@ import re
 from setuptools import setup
 from setuptools.command.sdist import sdist as _sdist
 from setuptools.command.install import install as _install
+from Cython.Build import cythonize
 
 VERSION_PY = """
 # This file is originally generated from Git information by running 'setup.py
@@ -110,6 +111,7 @@ setup(
     stochastic gradient descent methods in classification).',
     long_description=open('README.md').read(),
     install_requires=[
+        "cython",
         "dill",
         "future",
         "joblib",
@@ -121,5 +123,7 @@ setup(
         "scikit-learn >= 0.18.2",
         "scipy >= 0.14.0",
     ],
+    ext_modules=cythonize("eden/hash.pyx"),
+    zip_safe=False,
     cmdclass={'sdist': sdist, 'install': install}
 )
