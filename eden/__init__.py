@@ -74,3 +74,11 @@ def fast_hash_vec(vec, bitmask=_bitmask_):
         running_hash ^= hash((running_hash, vec_item, i))
         hash_vec.append(int(running_hash & bitmask) + 1)
     return hash_vec
+
+
+def newhashtest():
+    '''
+    >>> from eden import myhash
+    >>> myhash.python_wrapper_for_myhash()
+    'someoutput'
+    '''
