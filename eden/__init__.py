@@ -80,7 +80,7 @@ def newhashtest():
     '''
     >>> from eden import myhash
     >>> myhash.python_wrapper_for_myhash('totallyfancyteststring')
-    14848
+    -164093292463378545
     >>> myhash.python_wrapper_for_myhash('A')
-    'someoutput'
+    8320025024
     '''
