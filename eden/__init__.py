@@ -79,6 +79,8 @@ def fast_hash_vec(vec, bitmask=_bitmask_):
 def newhashtest():
     '''
     >>> from eden import myhash
-    >>> myhash.python_wrapper_for_myhash()
+    >>> myhash.python_wrapper_for_myhash('totallyfancyteststring')
+    14848
+    >>> myhash.python_wrapper_for_myhash('A')
     'someoutput'
     '''

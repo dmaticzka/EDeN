@@ -1,12 +1,8 @@
 cdef extern from 'myhash_impl.c':
-    void say_hello_to(int tons)
-    long newhash(char* data)
-    # string_hash(PyStringObject *a)
+    long newhash(unsigned char* c_string, Py_ssize_t c_len)
 
-def pyton_wrapper_for_hello(int tons):
-    say_hello_to(tons)
-
-def python_wrapper_for_myhash():
-    py_string = 'hello'
-    cdef char* other_c_string = py_string
-    return(newhash(other_c_string))
+def python_wrapper_for_myhash(bytes py_string):
+    # py_string = 'hellomydear'
+    cdef unsigned char* c_string = py_string
+    cdef Py_ssize_t c_len = len(py_string)
+    return(newhash(c_string, c_len))
