@@ -74,13 +74,3 @@ def fast_hash_vec(vec, bitmask=_bitmask_):
         running_hash ^= hash.py2hash((running_hash, vec_item, i))
         hash_vec.append(int(running_hash & bitmask) + 1)
     return hash_vec
-
-
-def newhashtest():
-    '''
-    >>> from eden import hash
-    >>> hash.py2hash('totallyfancyteststring')
-    -164093292463378545
-    >>> hash.py2hash('A')
-    8320025024
-    '''
