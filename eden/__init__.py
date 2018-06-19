@@ -6,6 +6,7 @@ from __future__ import division
 from __future__ import print_function
 
 import dill
+from eden import hash
 from sklearn.base import BaseEstimator, TransformerMixin
 
 __author__ = "Fabrizio Costa"
@@ -50,37 +51,36 @@ def apply_async(pool, fun, args, callback=None):
     """
     return pool.apply_async(run_dill_encoded, (dill.dumps((fun, args)),), callback=callback)
 
-
 def fast_hash_2(dat_1, dat_2, bitmask=_bitmask_):
-    return int(hash((dat_1, dat_2)) & bitmask) + 1
+    return int(hash.py2hash((dat_1, dat_2)) & bitmask) + 1
 
 
 def fast_hash_3(dat_1, dat_2, dat_3, bitmask=_bitmask_):
-    return int(hash((dat_1, dat_2, dat_3)) & bitmask) + 1
+    return int(hash.py2hash((dat_1, dat_2, dat_3)) & bitmask) + 1
 
 
 def fast_hash_4(dat_1, dat_2, dat_3, dat_4, bitmask=_bitmask_):
-    return int(hash((dat_1, dat_2, dat_3, dat_4)) & bitmask) + 1
+    return int(hash.py2hash((dat_1, dat_2, dat_3, dat_4)) & bitmask) + 1
 
 
 def fast_hash(vec, bitmask=_bitmask_):
-    return int(hash(tuple(vec)) & bitmask) + 1
+    return int(hash.py2hash(tuple(vec)) & bitmask) + 1
 
 
 def fast_hash_vec(vec, bitmask=_bitmask_):
     hash_vec = []
     running_hash = 0xAAAAAAAA
     for i, vec_item in enumerate(vec):
-        running_hash ^= hash((running_hash, vec_item, i))
+        running_hash ^= hash.py2hash((running_hash, vec_item, i))
         hash_vec.append(int(running_hash & bitmask) + 1)
     return hash_vec
 
 
 def newhashtest():
     '''
-    >>> from eden import myhash
-    >>> myhash.python_wrapper_for_myhash('totallyfancyteststring')
+    >>> from eden import hash
+    >>> hash.py2hash('totallyfancyteststring')
     -164093292463378545
-    >>> myhash.python_wrapper_for_myhash('A')
+    >>> hash.py2hash('A')
     8320025024
     '''

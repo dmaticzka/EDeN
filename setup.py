@@ -123,7 +123,7 @@ setup(
         "scikit-learn >= 0.18.2",
         "scipy >= 0.14.0",
     ],
-    ext_modules=cythonize("eden/myhash.pyx"),
+    ext_modules=cythonize("eden/hash.pyx"),
     zip_safe=False,
     cmdclass={'sdist': sdist, 'install': install}
 )
