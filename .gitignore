@@ -77,3 +77,4 @@ testenv*
 examples
 .pytest_cache/
 eden/_version.py
+eden/hash.c
