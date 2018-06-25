@@ -12,7 +12,6 @@ __author__ = "Fabrizio Costa"
 __copyright__ = "Copyright 2015, Fabrizio Costa"
 __credits__ = ["Fabrizio Costa", "Bjoern Gruening"]
 __license__ = "MIT"
-__version__ = "v2.0.1202"
 __maintainer__ = "Fabrizio Costa"
 __email__ = "costa@informatik.uni-freiburg.de"
 __status__ = "Production"
